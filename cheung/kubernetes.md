@@ -1,4 +1,4 @@
-# 1 Container basics
+# 1 basics
 ## Cloud Native是什么
 ```
 Cloud native technologies empower organizations to build and run scalable applications in modern, dynamic environments such as public, private, and hybrid clouds. Containers, service meshes, microservices, immutable infrastructure, and declarative APIs exemplify this approach.
@@ -23,8 +23,10 @@ Kubernetes 项目最主要的设计思想是，从更宏观的角度，以统一
 ## kubernetes是什么
 Kubernetes is an oepn-source system for automating deployment, 
 scaling, and management of containerized applications.
+* [Borg](https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/43438.pdf)
 
-## 1.1 隔离与限制
+## 1.1 容器基础原理
+### 1.1.1 隔离与限制
 * 容器的本质是一种特殊的进程,视图被隔离资源受限制的进程
   - 容器里的pid=1 的进程就是应用本身
   - kubernetes就是云时代的操作系统
@@ -36,7 +38,7 @@ scaling, and management of containerized applications.
 * Cgroups 资源隔离
   - 一个子系统目录加上一组资源限制文件的组合来实现资源隔离
 
-## 1.2 详解容器镜像
+## 1.1.2 详解容器镜像
 * rootfs（根文件系统）
 * 与虚拟机的区别
   - 不需要Hypervisor和guestOs，所以轻量
@@ -51,8 +53,12 @@ scaling, and management of containerized applications.
 * Docker Volume
   - docker run -v /home:/test 
 
+## 1.2 Docker
 
 # 2 Kubernetes Architechture
+![Kubernetes Architechture](../tmp/kubernetes_architechture.jpg)
+![Kubernetes Architechture](../tmp/kubernetes_architechture_main.jpg)
+
 * Master(4个逻辑组件)
   - apiserver 
     - 提供了资源操作的唯一入口，并提供认证、授权、访问控制、API注册和发现等机制
@@ -82,19 +88,50 @@ scaling, and management of containerized applications.
   - Container runtime 
     - 负责镜像管理以及Pod和容器的真正运行（CRI)
 * Addons
-  - Storage Plugin
-  - Network Plugin
-    - kube-dns负责为整个集群提供DNS服务
-    - Ingress Controller为服务提供外网入口
+  - Kube-DNS
   - WebUI
     - Dashboard提供GUI
   - level login
   - Heapster提供资源监控
   - Federation提供跨可用区的集群
   - Fluentd-elasticsearch提供集群日志采集、存储与查询
+* Plugin  
+  - Storage Plugin
+  - Network Plugin
+    - kube-dns负责为整个集群提供DNS服务
+    - Ingress Controller为服务提供外网入口
 
 ## 2.1 API Server
-* 只接受json格式的数据
+* 提供集群管理的REST API接口
+* 提供其它模块之间的数据交互和通信枢纽
+* 认证 => 鉴权 => 准入(Mutating, Validating, Admission) => 限流
+* API Requst => API HTTP Handler => Authentication,Authorization => Mutating admission => Object Schema Validating => Validating Admission => Persist to etcd
+
+### 2.1.1 API Server的认证机制
+* 启动时的安全配置
+  - secure-port
+  - insecure-port(不认证)
+* 认证插件
+  - x509
+  - 静态token
+  - 引导token
+  - 静态密码
+  - ServiceAccount
+  - OpenID
+  - webhook令牌身份认证
+  - 匿名请求
+
+### 2.1.2 API Server的授权机制
+
+### 2.1.3 API Server的准入控制
+
+### 2.1.4 API Server的限流方法
+
+### 2.1.5 API Server高可用部署
+
+### 2.1.6 多租户部署
+
+### 2.1.7 API Server生产环境的坑
 
 ## 2.2 Scheduler
 ### 2.2.1 调度策略
