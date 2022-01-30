@@ -376,6 +376,7 @@ kubectl logs -n kube-system kube-proxy-pscvh
 ```
 
 # 3 Kubernetes Workloads
+![Kubernetes Architechture](../tmp/k8s_main_object.png)
 * 资源对象 kubectl explain xx
   - workload: Pod、Deploymnt、ReplicaSet、StatefulSet、DaemonSet、Job、CronJob
   - 服务发现与均衡: Service、Ingress
