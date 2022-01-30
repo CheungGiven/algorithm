@@ -106,7 +106,7 @@ scaling, and management of containerized applications.
 * 提供其它模块之间的数据交互和通信枢纽
 * 认证 => 鉴权 => 准入(Mutating, Validating, Admission) => 限流
 * API Requst => API HTTP Handler => Authentication,Authorization => Mutating admission => Object Schema Validating => Validating Admission => Persist to etcd
-![Kubernetes Architechture](../tmp/kubernetes_api_server)
+![Kubernetes Architechture](../tmp/kubernetes_api_server.png)
 
 ### 2.1.1 API Server的认证机制
 * 启动时的安全配置
