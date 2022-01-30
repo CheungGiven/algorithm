@@ -56,8 +56,8 @@ scaling, and management of containerized applications.
 ## 1.2 Docker
 
 # 2 Kubernetes Architechture
-![Kubernetes Architechture](../tmp/kubernetes_architechture.jpg)
-![Kubernetes Architechture](../tmp/kubernetes_architechture_main.jpg)
+![Kubernetes Architechture](../tmp/kubernetes_architechture.png)
+![Kubernetes Architechture](../tmp/kubernetes_architechture_main.png)
 
 * Master(4个逻辑组件)
   - apiserver 
