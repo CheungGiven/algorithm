@@ -174,6 +174,99 @@ scaling, and management of containerized applications.
 ### 2.1.2 API Server 基于webhook的认证服务集成
 * 示例：[kubernetes-github-authn](https://github.com/oursky/kubernetes-github-authn) 实现了一个基于 WebHook 的 github 认证。
 
+### 2.1.3 API Server的授权机制
+鉴权的作用是，决定一个用户是否有权使用 Kubernetes API 做某些事情。它除了会影响 kubectl 等组件之外，还会对一些运行在集群内部并对集群进行操作的软件产生作用，例如使用了 Kubernetes 插件的 Jenkins，或者是利用 Kubernetes API 进行软件部署的 Helm。ABAC 和 RBAC 都能够对访问策略进行配置。
+* [Documentation](https://kubernetes.io/docs/reference/access-authn-authz/authorization/)
+* k8s的授权仅处理以下的请求属性
+  - user,group,extra
+  - API，请求方法(如get,post,update,patch,delete)和请求路径(/api)
+  - 请求资源和子资源
+  - Namespace
+  - API Group
+* k8s支持以下授权插件
+  - ABAC(Attribute Based Access Control)
+    - k8s比较难用 
+  - RBAC(Role Based Access Control)
+    - [RBAC documentation](https://kubernetes.io/docs/reference/access-authn-authz/rbac/)
+  - Webhook
+  - Node
+* Role 与 ClusterRole
+  ```
+  # Role 示例
+  kind: Role
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    namespace: default
+    name: pod-reader
+  rules:
+  - apiGroups: [""] #"" indicates the core API group
+    resources: ["pods"]
+    verbs: ["get", "watch", "list"]
+  ```
+  ```
+  # ClusterRole 示例
+  kind: ClusterRole
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    # "namespace" omitted since ClusterRoles are not namespaced
+    name: secret-reader
+  rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "watch", "list"]
+  ```
+* RoleBinding 和 ClusterRoleBinding
+  ```
+  # RoleBinding 示例（引用 Role）
+  # This role binding allows "jane" to read pods in the "default" namespace.
+  kind: RoleBinding
+  apiVersion: rbac.authorization.k8s.io/v1
+  metadata:
+    name: read-pods
+    namespace: default
+  subjects:
+  - kind: User
+    name: jane
+    apiGroup: rbac.authorization.k8s.io
+  roleRef:
+    kind: Role
+    name: pod-reader
+    apiGroup: rbac.authorization.k8s.io
+  ```
+* 规划系统角色
+  - User
+    - 管理员
+      - 所以资源的所有权限？ 
+    - 普通用户
+      - 该用户创建的namespace下所有object的操作权限？
+      - 其它namespace资源是否可读，是否可写
+  - SystemAccount
+    - systemAccount是开发者(Kubernetes developer or domain developer)创建应用后,应用于apiserver通讯需要的身份
+    - 用户可以创建自己的serviceAccount
+    - kubernetes也为每个namespace创建default的serviceAccount
+    - Default ServiceAccount通常需要给定权限以后才能队apiservice做写操作
+* 与权限相关的其它最佳实践
+    - ClusterRole是非namespace绑定的，对整个集群生效
+    - 通常需要创建一个管理员角色，并绑定给开发运营团队成员
+    - ThirdPartyResource和CustomResourceDefinition是全局资源，普通用户创建ThirdPartyResource以后，需要管理员授予相应权限后才能真正操作该对象
+    - 权限是可以传递的，用户A可以将其对某对象的某操作，抽取成一个权限，并赋予给用户B
+    - 
+
+
+
+### 2.1.4 API Server的准入控制
+
+### 2.1.5 API Server的限流方法
+
+### 2.1.6 API Server高可用部署
+
+### 2.1.7 多租户部署
+
+### 2.1.8 API Server生产环境的坑
+* keystore的认证插件导致keystore故障且无法恢复
+  - keystore故障后401，API server 反复retry导致request积压
+  - 指数Back off，Rate limit，Circuit break
+
 ## 2.2 Scheduler
 ### 2.2.1 调度策略
 * Etcd <=> ApiServer <=> Scheduler
@@ -1233,62 +1326,7 @@ spec:
   setenforce 0
   ```
 
-## 5.1 k8s的认证
-* 对称加密(秘匙)与非对称加密(公私匙)
-* k8s自带CA(认证局)
-  - 给每个需要的组件颁发证书 
-* 客户端认证(TSL双向认证)
-* 认证 => 授权 => 准入控制
-* 认证方式
-  - BearerToken
-  - SSL
-  - ServiceAccount(namespace, token, ca)
-  ```
-  $ curl --cert userbob.pem --key userBob-key.pem \  
-  --cacert /path/to/ca.pem \   
-  https://k8sServer:6443/api/v1/pods
-  ```
-* kubectl 自带认证信息
-  - .kube/config
-  ```
-  $ kubectl auth can-i create deployments
-  yes 
-  $ kubectl auth can-i create deployments --as bob
-  no 
-  $ kubectl auth can-i create deployments --as bob --namespace developer
-  yes 
-  ```
-
-  ## 5.2 k8s的授权
-* 授权模块
-  - ABAC
-  - webhook
-  - RBAC
-  - RBAC(role based access contro, k8s v1.6)
-    - Authority => Role => User
-* Client > API Server
-* RBAC
-  * User
-    - User
-    - ServiceAccount (集群内部访问)
-  * Authority
-    - Resouce + Verbs(CURD)
-    - /apis/apps/v1/namespace/default/deployment/myapp-deploy/
-  * Role
-    - name + resouce + verbs  
-  * RoleBinding
-  * ClusterRole
-    - ClusterRoleBinding
-  * AdmisionControl
-    - AlwaysAdmit
-    - AlwaysDeny
-    - DenyEscolatingExec
-
-## 5.3 ServiceAccount
-* 主要用来解决Pod在集群中的身份认证问题
-* 通过文件目录挂载来获取交互权限 
-
-## 5.4 kubeadm 一键部署利器
+## 5.1 kubeadm 一键部署利器
 * Kubernetes一键部署利器
 * 由于需要把kubelet 直接运行在宿主机上
 * kops, SaltStack
