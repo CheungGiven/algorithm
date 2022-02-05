@@ -117,24 +117,24 @@ scaling, and management of containerized applications.
   - x509证书
     - 使用x509客户端证书只需要API Server启动时配置 --client-ca-file=SOMEFILE。
     - 在证书认证时其CN域名作为用户名,而组织机构域则用作group名。
-```
-# Create private key
-openssl genrsa -out username.key 2048
-# Create CSR (certificate signing request)
-openssl req -new -key username.key -out username.csr -subj "/CN=username/O=group"
-# Create certificate from CSR using the cluster authority
-openssl x509 -req -in username.csr -CA $CA_LOCATION/ca.crt -CAkey $CA_LOCATION/ca.key -CAcreateserial -out username.crt -days 500
+    ```
+    # Create private key
+    openssl genrsa -out username.key 2048
+    # Create CSR (certificate signing request)
+    openssl req -new -key username.key -out username.csr -subj "/CN=username/O=group"
+    # Create certificate from CSR using the cluster authority
+    openssl x509 -req -in username.csr -CA $CA_LOCATION/ca.crt -CAkey $CA_LOCATION/ca.key -CAcreateserial -out username.crt -days 500
 
-# Config cluster
-kubectl config set-cluster my-cluster --certificate-authority=ca.pem --embed-certs=true --server=https://<APISERVER_IP>:6443
-# Config credentials
-kubectl config set-credentials username --client-certificate=username.crt --client-key=username.key --embed-certs=true
-# Config context
-kubectl config set-context username --cluster=my-cluster --user=username
-# Config RBAC if it's enabled
-# Finally, switch to new context
-kubectl config use-context username
-```
+    # Config cluster
+    kubectl config set-cluster my-cluster --certificate-authority=ca.pem --embed-certs=true --server=https://<APISERVER_IP>:6443
+    # Config credentials
+    kubectl config set-credentials username --client-certificate=username.crt --client-key=username.key --embed-certs=true
+    # Config context
+    kubectl config set-context username --cluster=my-cluster --user=username
+    # Config RBAC if it's enabled
+    # Finally, switch to new context
+    kubectl config use-context username
+    ```
   - 静态token
     - 使用静态Token文件认证只需要API Server启动时配置 --token-auth-file=SOMEFILE.
     - 该文件位CSV格式,每行至少包括三列token,username,user id(token,user,uid,"group1,group2,group3")
