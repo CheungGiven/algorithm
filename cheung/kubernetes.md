@@ -252,9 +252,32 @@ scaling, and management of containerized applications.
     - 权限是可以传递的，用户A可以将其对某对象的某操作，抽取成一个权限，并赋予给用户B
     - 
 
-
-
 ### 2.1.4 API Server的准入控制
+准入控制（Admission Control）在授权后对请求做进一步的验证或添加默认参数。不同于授权和认证只关心请求的用户和操作，准入控制还处理请求的内容，并且仅对创建、更新、删除或连接（如代理）等有效，而对读操作无效。
+准入控制支持同时开启多个插件，它们依次调用，只有全部插件都通过的请求才可以放过进入系统。
+
+* Kubernetes 目前提供了以下几种准入控制插件
+  - AlwaysAdmit: 接受所有请求。
+  - AlwaysPullImages: 总是拉取最新镜像,在多租户场景下非常有用。
+  - DenyEscalatingExec: 禁止特权容器的exec和attach操作
+  - ImagePolicyWebhook: 通过webhook决定image策略,需要同时配置 --admission-control-config-file,配置文件格式见[这里](https://kubernetes.io/docs/admin/admission-controllers/#configuration-file-format)。
+  - ServiceAccount: 自动创建默认ServiceAccount,并确保Pod引用的ServiceAccount已经存在
+  - SecurityContextDeny: 拒绝包含非法SecurityContext配置的容器
+  - ResourceQuota: 限制Pod的请求不会超过配额,需要在namespace中创建一个ResourceQuota对象
+  - LimitRanger: 为Pod设置默认资源请求和限制,需要在namespace中创建一个LimitRange对象
+  - InitialResources: 根据镜像的历史使用记录,为容器设置默认资源请求和限制
+  - NamespaceLifecycle: 确保处于termination状态的namespace不再接收新的对象创建请求,并拒绝请求不存在的namespace
+  - DefaultStorageClass: 为PVC设置默认StorageClass（见[这里](https://feisky.gitbooks.io/kubernetes/content/concepts/persistent-volume.html#StorageClass)）
+  - DefaultTolerationSeconds: 设置Pod的默认forgiveness toleration为5分钟
+  - PodSecurityPolicy: 使用Pod Security Policies时必须开启
+  - NodeRestriction: 限制kubelet仅可访问node、endpoint、pod、service以及secret、configmap、PV和PVC等相关的资源(仅适用于v1.7+)
+  - EventRateLimit: 限制事件请求数量(仅适用于 v1.9)
+  - ExtendedResourceToleration: 为使用扩展资源(如GPU和FPGA等)的Pod自动添加tolerations
+  - StorageProtection: 自动给新创建的PVC增加kubernetes.io/pvc-protection finalizer(v1.9及以前版本为PVCProtection,v.11 GA)
+  - PersistentVolumeClaimResize: 允许设置 allowVolumeExpansion=true的StorageClass调整PVC大小(v1.11 Beta)
+  - PodNodeSelector: 限制一个Namespace中可以使用的Node选择标签
+  - ValidatingAdmissionWebhook: 使用Webhook验证请求,这些Webhook并行调用,并且任何一个调用拒绝都会导致请求失败
+  - MutatingAdmissionWebhook: 使用Webhook修改请求,这些Webhook依次顺序调用
 
 ### 2.1.5 API Server的限流方法
 
