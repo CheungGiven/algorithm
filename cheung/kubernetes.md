@@ -112,15 +112,33 @@ scaling, and management of containerized applications.
 * 启动时的安全配置
   - secure-port
   - insecure-port(不认证)
+* 认证失败返回HTTP401
 * 认证插件
-  - x509
+  - x509证书
+    - 使用x509客户端证书只需要API Server启动时配置 --client-ca-file=SOMEFILE。
+    - 在证书认证时其CN域名作为用户名,而组织机构域则用作group名。
+```
+# Create private key
+openssl genrsa -out username.key 2048
+# Create CSR (certificate signing request)
+openssl req -new -key username.key -out username.csr -subj "/CN=username/O=group"
+# Create certificate from CSR using the cluster authority
+openssl x509 -req -in username.csr -CA $CA_LOCATION/ca.crt -CAkey $CA_LOCATION/ca.key -CAcreateserial -out username.crt -days 500
+
+# Config cluster
+kubectl config set-cluster my-cluster --certificate-authority=ca.pem --embed-certs=true --server=https://<APISERVER_IP>:6443
+# Config credentials
+kubectl config set-credentials username --client-certificate=username.crt --client-key=username.key --embed-certs=true
+# Config context
+kubectl config set-context username --cluster=my-cluster --user=username
+# Config RBAC if it's enabled
+# Finally, switch to new context
+kubectl config use-context username
+```
   - 静态token
-  - 引导token
-  - 静态密码
-  - ServiceAccount
-  - OpenID
-  - webhook令牌身份认证
-  - 匿名请求
+    - 使用静态Token文件认证只需要API Server启动时配置 --token-auth-file=SOMEFILE.
+    - 该文件位CSV格式,每行至少包括三列token,username,user id(token,user,uid,"group1,group2,group3")
+    - 客户端在使用 token 认证时，需要在请求头中加入 Bearer Authorization 头，比如Authorization: Bearer 31ada4fd-adec-460c-809a-9e56ceb75269
 
 ### 2.1.2 API Server的授权机制
 
