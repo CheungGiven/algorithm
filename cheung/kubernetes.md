@@ -124,7 +124,7 @@ scaling, and management of containerized applications.
     openssl req -new -key username.key -out username.csr -subj "/CN=username/O=group"
     # Create certificate from CSR using the cluster authority
     openssl x509 -req -in username.csr -CA $CA_LOCATION/ca.crt -CAkey $CA_LOCATION/ca.key -CAcreateserial -out username.crt -days 500
-
+    
     # Config cluster
     kubectl config set-cluster my-cluster --certificate-authority=ca.pem --embed-certs=true --server=https://<APISERVER_IP>:6443
     # Config credentials
@@ -139,18 +139,40 @@ scaling, and management of containerized applications.
     - 使用静态Token文件认证只需要API Server启动时配置 --token-auth-file=SOMEFILE.
     - 该文件位CSV格式,每行至少包括三列token,username,user id(token,user,uid,"group1,group2,group3")
     - 客户端在使用 token 认证时，需要在请求头中加入 Bearer Authorization 头，比如Authorization: Bearer 31ada4fd-adec-460c-809a-9e56ceb75269
+  - 引导token
+    - 为了支持平滑启动引导新的集群,k8s包含了一种动态管理的持有者令牌类型,称作启动引导令牌(Bootstrap Token)
+    - 这些令牌以Secret的形式保持在kube-system名字空间中,可以被动态管理和创建
+    - 在使用kubeadm部署k8s时候,可以通过kubeadm token list命令查询
+  - 静态密码
+    - 需要 API Server 启动时配置 --basic-auth-file=SOMEFILE,文件格式为 csv
+    - 每行至少三列 password, user, uid，后面是可选的 group 名
+    - password,user,uid,"group1,group2,group3"
+    - 客户端在使用密码认证时，需要在请求头重加入 Basic Authorization 头，如Authorization: Basic BASE64ENCODED(USER:PASSWORD)
+  - ServiceAccount
+    - ServiceAccount 是 Kubernetes 自动生成的，并会自动挂载到容器的 /var/run/secrets/kubernetes.io/serviceaccount 目录中
+    - 在认证时，ServiceAccount 的用户名格式为 system:serviceaccount:(NAMESPACE):(SERVICEACCOUNT)，并从属于两个 group：system:serviceaccounts 和 system:serviceaccounts:(NAMESPACE)。
+  - OpenID
+    - OAuth 2.0的认证机制
+    - API Server 需要配置
+    - --oidc-issuer-url，如 https://accounts.google.com
+    - --oidc-client-id，如 kubernetes
+    - --oidc-username-claim，如 sub
+    - --oidc-groups-claim，如 groups
+    - --oidc-ca-file，如 /etc/kubernetes/ssl/kc-ca.pem
+  - webhook令牌身份认证
+    - API Server 需要配置
+    ```
+    # 配置如何访问 webhook server
+    --authentication-token-webhook-config-file
+    # 默认 2 分钟
+    --authentication-token-webhook-cache-ttl
+    ```
+  - 匿名请求
+    - 如果使用 AlwaysAllow 以外的认证模式，则匿名请求默认开启，但可用 --anonymous-auth=false 禁止匿名请求。
+    - 匿名请求的用户名格式为 system:anonymous，而 group 则为 system:unauthenticated。 
 
-### 2.1.2 API Server的授权机制
-
-### 2.1.3 API Server的准入控制
-
-### 2.1.4 API Server的限流方法
-
-### 2.1.5 API Server高可用部署
-
-### 2.1.6 多租户部署
-
-### 2.1.7 API Server生产环境的坑
+### 2.1.2 API Server 基于webhook的认证服务集成
+* 示例：[kubernetes-github-authn](https://github.com/oursky/kubernetes-github-authn) 实现了一个基于 WebHook 的 github 认证。
 
 ## 2.2 Scheduler
 ### 2.2.1 调度策略
