@@ -1,0 +1,74 @@
+# Falco Rules Basics
+* Default rules file: etc/falco/falco_rules.yaml
+* Local rules file: etc/falco/falco_rules.local.yaml
+* Falco rule结构
+  - rule: 规则名字
+  - condition: 对事件进行过滤表达以匹配规则
+  - desc: 规则的详细描述
+  - output: 输出信息
+  - priority: critical, error, warning
+  - exceptions
+  - enabled
+  - tags
+  - warn_evttypes
+  - skip-if-unkonw-filter
+
+  
+# Falco macros
+
+```
+- macro: in_container
+  condition: container.id != host
+
+- macro: spawned_shell
+  condition: proc.name = bash
+
+- rule: shell_in_container
+  desc: notice shell activity within a container
+  condition: spawned_shell and in_container
+  output: shell in a container (user=%user.name ...)
+  priority: WARNING
+```
+
+# list
+
+# Append
+
+FALCO_POD=$(kubectl get pods -n falco | sed -n -e 's/^\(falco-[[:alnum:]]*\).*/\1/p')
+kubectl exec ${FALCO_POD} -n falco -- falco -L
+
+Falco default rules have at least one tag. These are the main tags:
+
+filesystem: The rule relates to reading/writing files.
+software_mgmt: The rule relates to any software/package management tool like rpm, dpkg, etc.
+process: The rule relates to starting a new process or changing the state of a current process.
+database: The rule relates to databases.
+host: The rule only works outside of containers.
+shell: The rule specifically relates to starting shells.
+container: The rule only works inside containers.
+cis: The rule is related to the CIS Docker benchmark.
+users: The rule relates to management of users or changing the identity of a running process.
+network: The rule relates to network activity.
+Hands-On Lab
+
+
+
+https://falco.org/docs/reference/rules/supported-events/
+
+image: docker.io/falcosecurity/falco-no-driver:0.33.1
+
+```
+    - macro: allowed_ssh_hosts
+      condition: fd.sip="10.42.0.0" or fd.sip="10.132.0.48"
+    - rule: Disallowed SSH Connection
+      enabled: true
+```
+
+* falco/sysdig 检测输出日志格式
+  ```
+  $ crictl ps | grep pod_name
+  $ sysdig -l | grep time
+  $ sysdig -M 30 -p "%evnt.time,%user.name,%proc.name"  --cri /run/containerd/containerd.sock container.name=tomcat123 >> /opt/KSR00101/incidents/summary
+  $ sysdig-probe-loader
+  ```
+  
